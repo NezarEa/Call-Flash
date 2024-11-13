@@ -16,6 +16,7 @@ import android.telephony.TelephonyManager
 class FlashOnCallService : Service() {
 
     private lateinit var cameraManager: CameraManager
+    private lateinit var telephonyReceiver: BroadcastReceiver
     private val handler = Handler(Looper.getMainLooper())
     private var isFlashing = false
     private val flashInterval = 500L
@@ -24,7 +25,7 @@ class FlashOnCallService : Service() {
         super.onCreate()
         cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
 
-        val telephonyReceiver = object : BroadcastReceiver() {
+        telephonyReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 when (intent.getStringExtra(TelephonyManager.EXTRA_STATE)) {
                     TelephonyManager.EXTRA_STATE_RINGING -> startFlashing()
@@ -32,7 +33,8 @@ class FlashOnCallService : Service() {
                 }
             }
         }
-        registerReceiver(telephonyReceiver, IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED))
+        val filter = IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED)
+        registerReceiver(telephonyReceiver, filter)
     }
 
     private fun startFlashing() {
@@ -65,4 +67,9 @@ class FlashOnCallService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(telephonyReceiver)
+    }
 }
